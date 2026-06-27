@@ -4,8 +4,10 @@ import com.example.tribeo.security.services.UserDetailsImpl;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.WeakKeyException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +31,18 @@ public class JwtUtils {
 
     @Value("${spring.ecom.app.jwtCookieName}")
     private String jwtCookie;
+
+    @PostConstruct
+    void validateJwtSecret() {
+        try {
+            key();
+        } catch (IllegalArgumentException | WeakKeyException e) {
+            throw new IllegalStateException(
+                    "Invalid spring.app.jwtSecret. Set SPRING_APP_JWT_SECRET to a Base64-encoded HMAC key, for example: openssl rand -base64 32",
+                    e
+            );
+        }
+    }
 
     public String getJwtFromCookies(HttpServletRequest request) {
         Cookie cookie = WebUtils.getCookie(request, jwtCookie);

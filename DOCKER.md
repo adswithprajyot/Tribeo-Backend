@@ -43,6 +43,12 @@ docker build -t tribeo-app:latest .
 ## Production Notes
 
 - Set strong values for `POSTGRES_PASSWORD`, `SPRING_SECURITY_USER_PASSWORD`, and `SPRING_APP_JWT_SECRET`.
+- `SPRING_APP_JWT_SECRET` must be Base64 encoded. Generate one with:
+
+```sh
+openssl rand -base64 32
+```
+
 - Keep `.env` private. It is intentionally ignored by Git.
 - Use `SPRING_JPA_HIBERNATE_DDL_AUTO=validate` or a migration tool for mature production deployments.
 - Set `FRONTEND_URL` to the deployed frontend origin so CORS and redirects use the right host.
