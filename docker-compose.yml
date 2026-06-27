@@ -1,0 +1,47 @@
+services:
+  app:
+    build:
+      context: .
+    image: tribeo-app:latest
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-myapp}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-tribeo}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-tribeo}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
+      SPRING_APP_JWT_SECRET: ${SPRING_APP_JWT_SECRET:-VHJpYmVvRGV2ZWxvcG1lbnRTZWNyZXRLZXlGb3JMb2NhbFRlc3RpbmdPbmx5MTIzNDU2Nzg5MA==}
+      SPRING_APP_JWT_EXPIRATION_MS: ${SPRING_APP_JWT_EXPIRATION_MS:-86400000}
+      SPRING_SECURITY_USER_NAME: ${SPRING_SECURITY_USER_NAME:-admin}
+      SPRING_SECURITY_USER_PASSWORD: ${SPRING_SECURITY_USER_PASSWORD:-admin@123}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173/}
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK:-INFO}
+      LOGGING_LEVEL_ORG_HIBERNATE_SQL: ${LOGGING_LEVEL_ORG_HIBERNATE_SQL:-INFO}
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY:-INFO}
+      LOGGING_LEVEL_COM_EXAMPLE_TRIBEO: ${LOGGING_LEVEL_COM_EXAMPLE_TRIBEO:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-myapp}
+      POSTGRES_USER: ${POSTGRES_USER:-tribeo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tribeo}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
