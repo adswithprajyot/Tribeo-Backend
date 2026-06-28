@@ -2,13 +2,11 @@ package com.example.tribeo.utils;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Component;
 
 import java.util.Properties;
-import java.security.SecureRandom;
 
 @Slf4j
 @Component
@@ -16,7 +14,6 @@ public class SendMailUtils {
 
     private   String HOST = "sandbox.smtp.mailtrap.io";
     private   int PORT = 587;
-    private  final SecureRandom secureRandom = new SecureRandom();
 
     @Value("${spring.mail.username}")
     private   String USERNAME;
@@ -24,10 +21,10 @@ public class SendMailUtils {
     @Value("${spring.mail.password}")
     private   String PASSWORD;
 
-    public  void sendemail(String email) {
-        if (USERNAME == null || PASSWORD == null) {
+    public  boolean sendemail(String email, String otp) {
+        if (USERNAME == null || USERNAME.isBlank() || PASSWORD == null || PASSWORD.isBlank()) {
             System.out.println("Set SPRING_MAIL_USERNAME and SPRING_MAIL_PASSWORD environment variables before sending mail.");
-            return;
+            return false;
         }
 
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
@@ -43,22 +40,18 @@ public class SendMailUtils {
         SimpleMailMessage message = new SimpleMailMessage();
         log.info("email from session: {}", email);
         message.setFrom("hello@demomailtrap.co");
-        message.setTo("adswithprajyot@gmail.com");
+        message.setTo(email);
         message.setSubject("Tribeo Verification Code");
-        String otp = generateOtp();
         message.setText(getOtpMessage(otp));
 
         try {
             mailSender.send(message);
-            System.out.println("Email sent");
+            log.info("Email sent");
+            return true;
         } catch (Exception e) {
-            System.out.println("Caught exception : " + e);
+            log.error("Caught exception : {}", String.valueOf(e));
+            return false;
         }
-    }
-
-    private  String generateOtp() {
-        int otp = 100000 + secureRandom.nextInt(900000);
-        return String.valueOf(otp);
     }
 
     private  String getOtpMessage(String otp) {

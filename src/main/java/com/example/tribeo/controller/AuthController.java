@@ -5,8 +5,10 @@ import com.example.tribeo.payload.AuthenticationResult;
 import com.example.tribeo.payload.ProfileDTO;
 import com.example.tribeo.security.request.LoginRequest;
 import com.example.tribeo.security.request.SignupRequest;
+import com.example.tribeo.security.request.VerifyOtpRequest;
 import com.example.tribeo.security.response.MessageResponse;
 import com.example.tribeo.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -18,6 +20,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -28,8 +32,16 @@ public class AuthController {
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
         AuthenticationResult result = authService.login(loginRequest);
-        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE,
-                        result.getJwtCookie().toString())
+        return ResponseEntity.ok()
+                .headers(cookieHeaders(result.getCookies()))
+                .body(result.getResponse());
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshToken(HttpServletRequest request) {
+        AuthenticationResult result = authService.refreshToken(request);
+        return ResponseEntity.ok()
+                .headers(cookieHeaders(result.getCookies()))
                 .body(result.getResponse());
     }
 
@@ -53,10 +65,10 @@ public class AuthController {
     }
 
     @PostMapping("/signout")
-    public ResponseEntity<?> signoutUser(){
-        ResponseCookie cookie = authService.logoutUser();
-        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE,
-                        cookie.toString())
+    public ResponseEntity<?> signoutUser(HttpServletRequest request){
+        List<ResponseCookie> cookies = authService.logoutUser(request);
+        return ResponseEntity.ok()
+                .headers(cookieHeaders(cookies))
                 .body(new MessageResponse("You've been signed out!"));
     }
 
@@ -79,6 +91,18 @@ public class AuthController {
     @PostMapping("/sendotpemail")
     public ResponseEntity<?> saveProfile(Authentication authentication) {
         return authService.sendOtpEmail(authentication);
+    }
+
+    @PostMapping({"/verifyotp", "/verify-otp"})
+    public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequest verifyOtpRequest,
+                                       Authentication authentication) {
+        return authService.verifyOtp(verifyOtpRequest, authentication);
+    }
+
+    private HttpHeaders cookieHeaders(List<ResponseCookie> cookies) {
+        HttpHeaders headers = new HttpHeaders();
+        cookies.forEach(cookie -> headers.add(HttpHeaders.SET_COOKIE, cookie.toString()));
+        return headers;
     }
 
 }
